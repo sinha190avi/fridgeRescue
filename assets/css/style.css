@@ -248,6 +248,12 @@ img {
     100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(228, 87, 46, 0.4)); }
 }
 
+@keyframes pulseGlow {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(228, 87, 46, 0.4); }
+    50% { transform: scale(1.03); box-shadow: 0 0 10px 2px rgba(228, 87, 46, 0.35); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(228, 87, 46, 0); }
+}
+
 .ring-pulse {
     animation: ringPulse 2s infinite ease-in-out;
 }
@@ -603,44 +609,86 @@ img {
     width: auto;
 }
 
-/* Mobile Bottom Navigation Bar (Hidden by default on Desktop) */
+/* ==========================================================
+   EXCLUSIVE FLOATING GLASS MOBILE BOTTOM NAVIGATION DOCK
+   ========================================================== */
 .mobile-nav {
     display: none !important;
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--surface-card);
-    border-top: 1px solid var(--border-color);
-    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+    bottom: 14px;
+    left: 14px;
+    right: 14px;
+    max-width: 460px;
+    margin: 0 auto;
+    background: rgba(254, 252, 248, 0.92);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    border-radius: 30px;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
     z-index: 9999;
     justify-content: space-around;
     align-items: center;
-    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 14px 40px -6px rgba(22, 45, 34, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] .mobile-nav {
+    background: rgba(22, 27, 34, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 18px 45px -5px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 .mobile-nav-item {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 3px;
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--text-secondary);
     text-decoration: none;
-    min-width: 52px;
-    padding: 4px 6px;
+    padding: 6px 10px;
+    border-radius: 20px;
+    position: relative;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-nav-item:active {
+    transform: scale(0.92);
 }
 
 .mobile-nav-item:hover,
 .mobile-nav-item.active {
     color: var(--primary);
+    background: rgba(31, 77, 58, 0.08);
     font-weight: 700;
 }
 
 [data-theme="dark"] .mobile-nav-item:hover,
 [data-theme="dark"] .mobile-nav-item.active {
     color: var(--lime);
+    background: rgba(166, 216, 84, 0.14);
+}
+
+/* Center Highlight for Scan Button (Floating Hero Pill) */
+.mobile-nav-item.mobile-nav-scan {
+    background: linear-gradient(135deg, var(--forest-green), #2A694F);
+    color: #FAF6EE !important;
+    border-radius: 22px;
+    padding: 7px 15px;
+    box-shadow: 0 6px 18px rgba(31, 77, 58, 0.35);
+    transform: translateY(-4px);
+}
+.mobile-nav-item.mobile-nav-scan:active {
+    transform: translateY(-2px) scale(0.94);
+}
+[data-theme="dark"] .mobile-nav-item.mobile-nav-scan {
+    background: linear-gradient(135deg, var(--lime), #6BA81C);
+    color: #0D1117 !important;
+    box-shadow: 0 6px 20px rgba(166, 216, 84, 0.4);
 }
 
 /* ==========================================================
@@ -1819,21 +1867,46 @@ img {
 @media (max-width: 900px) {
     .app-container {
         flex-direction: column !important;
+        overflow-x: hidden !important;
+        width: 100% !important;
     }
 
-    /* Show mobile top header */
+    /* Exclusive Frosted Glass Mobile Top Header */
     .mobile-topbar {
         display: flex !important;
         align-items: center;
         justify-content: space-between;
-        padding: 12px 18px;
-        background: var(--surface-card);
-        border-bottom: 1px solid var(--border-color);
+        padding: 11px 16px;
+        background: rgba(254, 252, 248, 0.88);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
         position: sticky;
         top: 0;
         z-index: 990;
         width: 100%;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    }
+
+    [data-theme="dark"] .mobile-topbar {
+        background: rgba(13, 17, 23, 0.88);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .mobile-rescue-pill {
+        background: linear-gradient(135deg, rgba(228,87,46,0.12), rgba(244,185,66,0.15));
+        border: 1px solid rgba(228,87,46,0.3);
+        color: var(--tomato);
+        font-size: 11px;
+        font-weight: 700;
+        border-radius: 20px;
+        padding: 3px 9px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        text-decoration: none;
+        animation: pulseGlow 2.5s infinite;
     }
 
     /* Hide desktop sidebar */
@@ -1841,15 +1914,15 @@ img {
         display: none !important;
     }
 
-    /* Content spans full width */
+    /* Generous bottom padding to clear the floating glass dock */
     .main-content {
         margin-left: 0 !important;
         width: 100% !important;
         max-width: 100% !important;
-        padding: 20px 16px 100px !important;
+        padding: 18px 14px 120px !important;
     }
 
-    /* Show bottom navigation */
+    /* Show floating dock */
     .mobile-nav {
         display: flex !important;
     }
@@ -1879,6 +1952,215 @@ img {
 
     .editable-table {
         min-width: 600px;
+    }
+
+    /* Modern Bento Metrics Grid (2x2) */
+    .metrics-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+        margin-bottom: 22px !important;
+    }
+
+    .metric-card {
+        padding: 14px 12px !important;
+        border-radius: 18px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
+        background: var(--surface-card) !important;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.03) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+
+    .metric-icon {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 18px !important;
+        border-radius: 10px !important;
+    }
+
+    .metric-val {
+        font-size: 22px !important;
+        font-weight: 800 !important;
+        line-height: 1.1 !important;
+    }
+
+    .metric-label {
+        font-size: 11px !important;
+        font-weight: 600 !important;
+        color: var(--text-secondary) !important;
+    }
+
+    /* Header Action Group on Mobile */
+    .header-action-group {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 8px !important;
+        width: 100% !important;
+        margin-top: 12px !important;
+    }
+
+    .header-action-group a[href="scan.php"]:first-child {
+        grid-column: 1 / -1 !important;
+        padding: 12px 18px !important;
+        font-size: 15px !important;
+        font-weight: 700 !important;
+        border-radius: 16px !important;
+        background: linear-gradient(135deg, var(--forest-green), #2A694F) !important;
+        color: #FAF6EE !important;
+        box-shadow: 0 4px 16px rgba(31, 77, 58, 0.28) !important;
+        justify-content: center !important;
+        text-align: center !important;
+    }
+
+    .header-action-group .btn {
+        padding: 9px 8px !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        border-radius: 12px !important;
+        justify-content: center !important;
+        text-align: center !important;
+    }
+
+    /* Exclusive Top Rescue Shelf Card */
+    .rescue-shelf-card {
+        background: linear-gradient(135deg, rgba(228,87,46,0.06) 0%, rgba(244,185,66,0.09) 100%) !important;
+        border: 1.5px solid rgba(228,87,46,0.22) !important;
+        border-radius: 24px !important;
+        padding: 18px 14px !important;
+        box-shadow: 0 8px 24px rgba(228,87,46,0.07) !important;
+        margin-bottom: 24px !important;
+    }
+
+    .rescue-shelf-card .btn {
+        width: 100% !important;
+        margin-top: 12px !important;
+        justify-content: center !important;
+        border-radius: 14px !important;
+        font-weight: 700 !important;
+        background: linear-gradient(135deg, var(--tomato), #D0451C) !important;
+        color: #fff !important;
+        box-shadow: 0 4px 14px rgba(228,87,46,0.3) !important;
+    }
+
+    /* Shelves & Cards */
+    .fridge-shelf {
+        background: var(--surface-card) !important;
+        border-radius: 22px !important;
+        padding: 18px 14px !important;
+        border: 1px solid var(--border-color) !important;
+        margin-bottom: 20px !important;
+    }
+
+    .shelf-items-grid {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+
+    /* Luxury Touch Food Card */
+    .food-card {
+        border-radius: 18px !important;
+        padding: 14px !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03) !important;
+        border: 1px solid var(--border-color) !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .food-card[data-status="expired"],
+    .food-card[data-status="expiring"] {
+        border-left: 4.5px solid var(--tomato) !important;
+    }
+
+    .food-card[data-status="soon"] {
+        border-left: 4.5px solid var(--mango) !important;
+    }
+
+    .food-card[data-status="fresh"] {
+        border-left: 4.5px solid var(--forest-green) !important;
+    }
+
+    .food-card-top {
+        align-items: center !important;
+        gap: 12px !important;
+        margin-bottom: 12px !important;
+    }
+
+    .food-emoji {
+        width: 46px !important;
+        height: 46px !important;
+        border-radius: 14px !important;
+        background: var(--surface-card-subtle) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 26px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .food-name {
+        font-size: 15px !important;
+        font-weight: 700 !important;
+    }
+
+    .food-card-bottom {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding-top: 10px !important;
+        border-top: 1px dashed var(--border-color) !important;
+        gap: 8px !important;
+    }
+
+    .food-actions .btn {
+        width: 34px !important;
+        height: 34px !important;
+        font-size: 14px !important;
+        border-radius: 10px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .food-actions .btn:active {
+        transform: scale(0.9) !important;
+    }
+
+    /* Swipeable Filter Chips */
+    .filter-bar {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+        margin-bottom: 20px !important;
+    }
+
+    .filter-chips {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        gap: 8px !important;
+        scroll-snap-type: x mandatory !important;
+        padding: 4px 2px 10px !important;
+        scrollbar-width: none !important;
+    }
+    .filter-chips::-webkit-scrollbar {
+        display: none !important;
+    }
+
+    .filter-chip {
+        scroll-snap-align: start !important;
+        flex-shrink: 0 !important;
+        border-radius: 20px !important;
+        padding: 7px 15px !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+    }
+
+    .filter-chip.active {
+        box-shadow: 0 4px 12px rgba(31, 77, 58, 0.25) !important;
     }
 
     /* Landing page mobile adaptation */
@@ -1945,26 +2227,6 @@ img {
         flex-wrap: wrap !important;
         font-size: 12px !important;
     }
-
-    .header-action-group {
-        width: 100% !important;
-    }
-
-    .header-action-group .btn {
-        flex: 1 1 calc(50% - 6px);
-        min-width: 120px;
-        text-align: center;
-        justify-content: center;
-    }
-
-    .shelf-items-grid {
-        grid-template-columns: 1fr !important;
-    }
-
-    .food-card-bottom {
-        flex-wrap: wrap !important;
-        gap: 8px !important;
-    }
 }
 
 /* Mobile Phones (<= 640px) */
@@ -1989,10 +2251,6 @@ img {
         font-size: 32px !important;
     }
 
-    .metrics-grid {
-        grid-template-columns: 1fr !important;
-    }
-
     .badges-grid {
         grid-template-columns: 1fr !important;
     }
@@ -2003,19 +2261,6 @@ img {
 
     .live-fridge-container {
         padding: 14px 10px !important;
-    }
-
-    .rescue-shelf-card {
-        padding: 16px 12px !important;
-    }
-
-    .fridge-shelf {
-        padding: 16px 12px !important;
-    }
-
-    .filter-bar {
-        flex-direction: column !important;
-        align-items: stretch !important;
     }
 
     .search-box {
@@ -2039,7 +2284,7 @@ img {
 
     .modal-dialog {
         max-width: 95vw !important;
-        border-radius: var(--radius-lg) !important;
+        border-radius: var(--radius-xl) !important;
     }
 
     .modal-header,
@@ -2057,19 +2302,6 @@ img {
         max-width: 92vw !important;
     }
 
-    /* Horizontal scrollable chip bar for smooth touch swiping */
-    .filter-chips {
-        display: flex !important;
-        flex-wrap: nowrap !important;
-        overflow-x: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-        padding-bottom: 6px !important;
-        scrollbar-width: none !important;
-    }
-    .filter-chips::-webkit-scrollbar {
-        display: none !important;
-    }
-
     .pantry-add-cloud {
         max-height: 200px !important;
         overflow-y: auto !important;
@@ -2085,7 +2317,7 @@ img {
 /* Extra Small Phones (<= 480px) */
 @media (max-width: 480px) {
     .main-content {
-        padding: 14px 10px 88px !important;
+        padding: 14px 10px 120px !important;
     }
 
     .shelf-items-grid {

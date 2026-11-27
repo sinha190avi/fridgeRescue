@@ -1,13 +1,13 @@
 <?php
 $currentPageFooter = basename($_SERVER['PHP_SELF'] ?? 'dashboard.php');
 ?>
-    <!-- Mobile Bottom Navigation Bar -->
+    <!-- Mobile Bottom Navigation Bar (Floating Glass Dock) -->
     <nav class="mobile-nav">
         <a href="dashboard.php" class="mobile-nav-item <?= $currentPageFooter === 'dashboard.php' ? 'active' : '' ?>">
             <span style="font-size: 20px;">❄️</span>
             <span>Fridge</span>
         </a>
-        <a href="scan.php" class="mobile-nav-item <?= $currentPageFooter === 'scan.php' ? 'active' : '' ?>">
+        <a href="scan.php" class="mobile-nav-item mobile-nav-scan <?= $currentPageFooter === 'scan.php' ? 'active' : '' ?>">
             <span style="font-size: 20px;">📸</span>
             <span>Scan</span>
         </a>

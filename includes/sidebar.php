@@ -3,14 +3,22 @@ $currentPage = basename($_SERVER['PHP_SELF'] ?? 'dashboard.php');
 ?>
 <!-- Mobile Top Navigation Header -->
 <header class="mobile-topbar">
-    <a href="dashboard.php" style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-family: var(--font-heading); font-size: 18px; color: var(--primary);">
-        <span style="font-size: 22px;">🥦</span> FridgeRescue
-    </a>
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <a href="dashboard.php" style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-family: var(--font-heading); font-size: 18px; color: var(--primary); text-decoration: none;">
+            <span style="font-size: 22px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">🥦</span>
+            <span>FridgeRescue</span>
+        </a>
+        <?php if (!empty($expiringCount) && $expiringCount > 0): ?>
+            <a href="dashboard.php#rescueShelf" class="mobile-rescue-pill" title="<?= $expiringCount ?> items need rescue!">
+                <span>🚨</span> <?= $expiringCount ?>
+            </a>
+        <?php endif; ?>
+    </div>
     <div style="display: flex; align-items: center; gap: 8px;">
-        <button type="button" class="btn btn-icon btn-outline theme-toggle-btn" aria-label="Toggle theme" style="width: 34px; height: 34px; font-size: 14px;">
+        <button type="button" class="btn btn-icon btn-outline theme-toggle-btn" aria-label="Toggle theme" style="width: 36px; height: 36px; font-size: 15px; border-radius: 12px;">
             🌙
         </button>
-        <a href="logout.php" class="btn btn-icon btn-outline" title="Logout" style="width: 34px; height: 34px; font-size: 14px;">
+        <a href="logout.php" class="btn btn-icon btn-outline" title="Logout" style="width: 36px; height: 36px; font-size: 14px; border-radius: 12px;">
             🚪
         </a>
     </div>
