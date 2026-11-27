@@ -1,0 +1,36 @@
+# ==========================================================
+# FridgeRescue — Apache Server Configuration
+# ==========================================================
+
+# Enable Directory Trailing Slash (Fixes relative asset URLs)
+<IfModule mod_dir.c>
+    DirectorySlash On
+    DirectoryIndex index.php index.html
+</IfModule>
+
+# Ensure proper MIME types
+<IfModule mod_mime.c>
+    AddType text/css .css
+    AddType application/javascript .js
+    AddType image/svg+xml .svg
+    AddType image/webp .webp
+    AddType application/json .json
+</IfModule>
+
+# Prevent directory listings
+Options -Indexes
+
+# UTF-8 Encoding default
+AddDefaultCharset UTF-8
+
+# Protect sensitive files from web access
+<FilesMatch "^\.env|\.env\.example|\.git|\.sql$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<IfModule mod_authz_core.c>
+    <FilesMatch "^\.env|\.sql$">
+        Require all denied
+    </FilesMatch>
+</IfModule>

@@ -1,0 +1,8 @@
+.env
+uploads/*
+!uploads/.gitkeep
+!uploads/sessions/.gitkeep
+.vscode/
+.idea/
+*.log
+*.zip
