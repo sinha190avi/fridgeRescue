@@ -25,11 +25,11 @@ function seed_demo_database(): array {
             'light',
             DATE_SUB(NOW(), INTERVAL 60 DAY)
         ) ON DUPLICATE KEY UPDATE 
-            name = VALUES(name),
-            password_hash = VALUES(password_hash),
+            name = 'Chef Avilash',
+            password_hash = :hash2,
             alert_days = 3
     ");
-    $stmtUser->execute(['hash' => $hash]);
+    $stmtUser->execute(['hash' => $hash, 'hash2' => $hash]);
 
     // 2. Clear previous items for Demo User
     $db->exec("DELETE FROM fridge_items WHERE user_id = 1");

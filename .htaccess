@@ -17,20 +17,16 @@
     AddType application/json .json
 </IfModule>
 
-# Prevent directory listings
-Options -Indexes
-
 # UTF-8 Encoding default
 AddDefaultCharset UTF-8
 
-# Protect sensitive files from web access
+# Protect sensitive files from web access (Cross-version compatible)
 <FilesMatch "^\.env|\.env\.example|\.git|\.sql$">
-    Order allow,deny
-    Deny from all
-</FilesMatch>
-
-<IfModule mod_authz_core.c>
-    <FilesMatch "^\.env|\.sql$">
+    <IfModule mod_authz_core.c>
         Require all denied
-    </FilesMatch>
-</IfModule>
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>

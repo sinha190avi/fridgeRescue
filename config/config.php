@@ -72,12 +72,16 @@ if (is_dir($sessionDir) && is_writable($sessionDir)) {
     @session_save_path($sessionDir);
 }
 
-// Secure Session Initialization
+// Secure Session Initialization with Fail-Safe Fallback
 if (session_status() === PHP_SESSION_NONE && php_sapi_name() !== 'cli') {
-    ini_set('session.cookie_httponly', '1');
-    ini_set('session.use_only_cookies', '1');
-    ini_set('session.cookie_samesite', 'Lax');
-    // Set 7 days lifetime
-    ini_set('session.gc_maxlifetime', '604800');
-    session_start();
+    @ini_set('session.cookie_httponly', '1');
+    @ini_set('session.use_only_cookies', '1');
+    @ini_set('session.cookie_samesite', 'Lax');
+    @ini_set('session.gc_maxlifetime', '604800');
+    
+    // Attempt session start; if custom path fails on restricted hosts, fallback to sys temp dir
+    if (!@session_start()) {
+        @session_save_path(sys_get_temp_dir());
+        @session_start();
+    }
 }

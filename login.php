@@ -9,7 +9,7 @@ require_guest();
 $error = '';
 $flash = get_flash();
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     if (!csrf_verify()) {
         $error = 'Security check failed. Please refresh and try again.';
     } else {
@@ -20,36 +20,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($email) || empty($password)) {
             $error = 'Please enter both email and password.';
         } else {
-            $db = get_db();
-            $stmt = $db->prepare("SELECT * FROM users WHERE email = :email LIMIT 1");
-            $stmt->execute(['email' => $email]);
-            $user = $stmt->fetch();
+            try {
+                $db = get_db();
 
-            if ($user && password_verify($password, $user['password_hash'])) {
-                if ($isDemo || (int)($user['id'] ?? 0) === 1) {
-                    require_once __DIR__ . '/database/seed.php';
-                    try {
-                        $staleCheck = $db->query("
-                            SELECT 
-                                SUM(CASE WHEN expiry_date < DATE_SUB(CURDATE(), INTERVAL 2 DAY) THEN 1 ELSE 0 END) as expired_cnt,
-                                SUM(CASE WHEN emoji LIKE 'f%' OR emoji LIKE '%Ã%' OR emoji LIKE '%ñ%' OR emoji LIKE '%½%' THEN 1 ELSE 0 END) as mojibake_cnt,
-                                COUNT(*) as total_cnt
-                            FROM fridge_items 
-                            WHERE user_id = 1 AND status = 'active'
-                        ");
-                        $itemStats = $staleCheck ? $staleCheck->fetch() : null;
-                        if (!$itemStats || (int)($itemStats['total_cnt'] ?? 0) < 5 || (int)($itemStats['expired_cnt'] ?? 0) >= 2 || (int)($itemStats['mojibake_cnt'] ?? 0) > 0) {
-                            seed_demo_database();
-                        }
-                    } catch (Throwable $ignore) {
-                        seed_demo_database();
+                // 1. Auto-initialize tables if database is empty on hosting
+                try {
+                    $tableCheck = $db->query("SHOW TABLES LIKE 'users'")->fetch();
+                    if (!$tableCheck) {
+                        require_once __DIR__ . '/setup_db.php';
+                        run_database_installer();
                     }
+                } catch (Throwable $t) {
+                    // Fallback attempt
+                    require_once __DIR__ . '/setup_db.php';
+                    @run_database_installer();
                 }
-                login_user($user);
-                header('Location: dashboard.php');
-                exit;
-            } else {
-                $error = 'Invalid email or password.';
+
+                $stmt = $db->prepare("SELECT * FROM users WHERE email = :email LIMIT 1");
+                $stmt->execute(['email' => $email]);
+                $user = $stmt->fetch();
+
+                // 2. If Demo User is missing from database, auto-seed immediately
+                if (!$user && ($isDemo || $email === 'demo@fridgerescue.com')) {
+                    require_once __DIR__ . '/database/seed.php';
+                    seed_demo_database();
+                    $stmt->execute(['email' => $email]);
+                    $user = $stmt->fetch();
+                }
+
+                // 3. Verify Credentials
+                if ($user && password_verify($password, $user['password_hash'])) {
+                    if ($isDemo || (int)($user['id'] ?? 0) === 1) {
+                        require_once __DIR__ . '/database/seed.php';
+                        try {
+                            $staleCheck = $db->query("
+                                SELECT 
+                                    SUM(CASE WHEN expiry_date < DATE_SUB(CURDATE(), INTERVAL 2 DAY) THEN 1 ELSE 0 END) as expired_cnt,
+                                    COUNT(*) as total_cnt
+                                FROM fridge_items 
+                                WHERE user_id = 1 AND status = 'active'
+                            ");
+                            $itemStats = $staleCheck ? $staleCheck->fetch() : null;
+                            if (!$itemStats || (int)($itemStats['total_cnt'] ?? 0) < 5 || (int)($itemStats['expired_cnt'] ?? 0) >= 2) {
+                                seed_demo_database();
+                            }
+                        } catch (Throwable $ignore) {
+                            @seed_demo_database();
+                        }
+                    }
+                    login_user($user);
+                    header('Location: dashboard.php');
+                    exit;
+                } else {
+                    $error = 'Invalid email or password.';
+                }
+            } catch (Throwable $e) {
+                $error = 'Authentication error: ' . $e->getMessage();
             }
         }
     }

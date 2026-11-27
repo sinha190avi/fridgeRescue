@@ -13,19 +13,18 @@ if ($isDemoUser) {
         exit;
     }
     
-    // Auto-detect if demo pantry contains expired items (> 2 days ago) or emoji mojibake
+    // Auto-detect if demo pantry contains expired items (> 2 days ago)
     try {
         $dbCheck = get_db();
         $staleStmt = $dbCheck->query("
             SELECT 
                 SUM(CASE WHEN expiry_date < DATE_SUB(CURDATE(), INTERVAL 2 DAY) THEN 1 ELSE 0 END) as expired_cnt,
-                SUM(CASE WHEN emoji LIKE 'f%' OR emoji LIKE '%Ã%' OR emoji LIKE '%ñ%' OR emoji LIKE '%½%' THEN 1 ELSE 0 END) as mojibake_cnt,
                 COUNT(*) as total_cnt
             FROM fridge_items 
             WHERE user_id = 1 AND status = 'active'
         ");
         $statsCheck = $staleStmt ? $staleStmt->fetch() : null;
-        if ($statsCheck && (($statsCheck['total_cnt'] ?? 0) < 5 || ($statsCheck['expired_cnt'] ?? 0) >= 2 || ($statsCheck['mojibake_cnt'] ?? 0) > 0)) {
+        if ($statsCheck && (($statsCheck['total_cnt'] ?? 0) < 5 || ($statsCheck['expired_cnt'] ?? 0) >= 2)) {
             seed_demo_database();
             header('Location: dashboard.php');
             exit;

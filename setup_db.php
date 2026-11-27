@@ -13,106 +13,115 @@ require_once __DIR__ . '/includes/db.php';
 $message = '';
 $status = 'idle'; // idle | success | error
 
+function run_database_installer(): array {
+    $db = get_db();
+    $db->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
+
+    // 1. Drop existing tables safely
+    $db->exec("DROP TABLE IF EXISTS `rate_limits`");
+    $db->exec("DROP TABLE IF EXISTS `waste_log`");
+    $db->exec("DROP TABLE IF EXISTS `recipes_saved`");
+    $db->exec("DROP TABLE IF EXISTS `fridge_items`");
+    $db->exec("DROP TABLE IF EXISTS `users`");
+
+    // 2. Users Table
+    $db->exec("
+        CREATE TABLE `users` (
+            `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            `name` VARCHAR(100) NOT NULL,
+            `email` VARCHAR(191) NOT NULL UNIQUE,
+            `password_hash` VARCHAR(255) NOT NULL,
+            `diet_pref` ENUM('all', 'vegetarian', 'vegan', 'non_veg', 'keto') NOT NULL DEFAULT 'all',
+            `currency` VARCHAR(10) NOT NULL DEFAULT '₹',
+            `alert_days` TINYINT UNSIGNED NOT NULL DEFAULT 3,
+            `theme` ENUM('light', 'dark') NOT NULL DEFAULT 'light',
+            `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX `idx_users_email` (`email`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+
+    // 3. Fridge Items Table
+    $db->exec("
+        CREATE TABLE `fridge_items` (
+            `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            `user_id` INT UNSIGNED NOT NULL,
+            `name` VARCHAR(100) NOT NULL,
+            `emoji` VARCHAR(16) NOT NULL DEFAULT '🥦',
+            `category` ENUM('vegetable', 'fruit', 'dairy', 'leftover', 'other') NOT NULL DEFAULT 'vegetable',
+            `quantity` DECIMAL(8,2) NOT NULL DEFAULT 1.00,
+            `unit` VARCHAR(20) NOT NULL DEFAULT 'pcs',
+            `estimated_price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+            `added_on` DATE NOT NULL,
+            `expiry_date` DATE NOT NULL,
+            `status` ENUM('active', 'used', 'wasted') NOT NULL DEFAULT 'active',
+            `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+            INDEX `idx_items_user_status_exp` (`user_id`, `status`, `expiry_date`),
+            INDEX `idx_items_expiry` (`expiry_date`),
+            INDEX `idx_items_category` (`category`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+
+    // 4. Recipes Saved Table
+    $db->exec("
+        CREATE TABLE `recipes_saved` (
+            `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            `user_id` INT UNSIGNED NOT NULL,
+            `title` VARCHAR(200) NOT NULL,
+            `cooking_time` VARCHAR(50) NOT NULL,
+            `difficulty` VARCHAR(50) NOT NULL,
+            `ingredients_json` JSON NOT NULL,
+            `steps_json` JSON NOT NULL,
+            `rescued_items` VARCHAR(255) DEFAULT NULL,
+            `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+            INDEX `idx_recipes_user` (`user_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+
+    // 5. Waste Log Table
+    $db->exec("
+        CREATE TABLE `waste_log` (
+            `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            `user_id` INT UNSIGNED NOT NULL,
+            `item_id` INT UNSIGNED NULL,
+            `action` ENUM('rescued', 'wasted') NOT NULL,
+            `value_saved` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+            `logged_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+            INDEX `idx_waste_user_date` (`user_id`, `logged_at`),
+            INDEX `idx_waste_action` (`action`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+
+    // 6. Rate Limits Table
+    $db->exec("
+        CREATE TABLE `rate_limits` (
+            `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            `user_id` INT UNSIGNED NOT NULL,
+            `endpoint` VARCHAR(64) NOT NULL,
+            `called_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+            INDEX `idx_rate_user_endpoint_time` (`user_id`, `endpoint`, `called_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+
+    // 7. Seed Demo User & Items using our existing pure UTF-8 seeder
+    require_once __DIR__ . '/database/seed.php';
+    $seedResult = seed_demo_database();
+
+    return [
+        'success' => true,
+        'count' => $seedResult['count'] ?? 15,
+        'message' => "Database tables created successfully and seeded with " . ($seedResult['count'] ?? 15) . " fresh pantry items!"
+    ];
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' || isset($_GET['auto'])) {
     try {
-        $db = get_db();
-        $db->exec("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
-
-        // 1. Drop existing tables safely
-        $db->exec("DROP TABLE IF EXISTS `rate_limits`");
-        $db->exec("DROP TABLE IF EXISTS `waste_log`");
-        $db->exec("DROP TABLE IF EXISTS `recipes_saved`");
-        $db->exec("DROP TABLE IF EXISTS `fridge_items`");
-        $db->exec("DROP TABLE IF EXISTS `users`");
-
-        // 2. Users Table
-        $db->exec("
-            CREATE TABLE `users` (
-                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                `name` VARCHAR(100) NOT NULL,
-                `email` VARCHAR(191) NOT NULL UNIQUE,
-                `password_hash` VARCHAR(255) NOT NULL,
-                `diet_pref` ENUM('all', 'vegetarian', 'vegan', 'non_veg', 'keto') NOT NULL DEFAULT 'all',
-                `currency` VARCHAR(10) NOT NULL DEFAULT '₹',
-                `alert_days` TINYINT UNSIGNED NOT NULL DEFAULT 3,
-                `theme` ENUM('light', 'dark') NOT NULL DEFAULT 'light',
-                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                INDEX `idx_users_email` (`email`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ");
-
-        // 3. Fridge Items Table
-        $db->exec("
-            CREATE TABLE `fridge_items` (
-                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                `user_id` INT UNSIGNED NOT NULL,
-                `name` VARCHAR(100) NOT NULL,
-                `emoji` VARCHAR(16) NOT NULL DEFAULT '🥦',
-                `category` ENUM('vegetable', 'fruit', 'dairy', 'leftover', 'other') NOT NULL DEFAULT 'vegetable',
-                `quantity` DECIMAL(8,2) NOT NULL DEFAULT 1.00,
-                `unit` VARCHAR(20) NOT NULL DEFAULT 'pcs',
-                `estimated_price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-                `added_on` DATE NOT NULL,
-                `expiry_date` DATE NOT NULL,
-                `status` ENUM('active', 'used', 'wasted') NOT NULL DEFAULT 'active',
-                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
-                INDEX `idx_items_user_status_exp` (`user_id`, `status`, `expiry_date`),
-                INDEX `idx_items_expiry` (`expiry_date`),
-                INDEX `idx_items_category` (`category`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ");
-
-        // 4. Recipes Saved Table
-        $db->exec("
-            CREATE TABLE `recipes_saved` (
-                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                `user_id` INT UNSIGNED NOT NULL,
-                `title` VARCHAR(200) NOT NULL,
-                `cooking_time` VARCHAR(50) NOT NULL,
-                `difficulty` VARCHAR(50) NOT NULL,
-                `ingredients_json` JSON NOT NULL,
-                `steps_json` JSON NOT NULL,
-                `rescued_items` VARCHAR(255) DEFAULT NULL,
-                `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
-                INDEX `idx_recipes_user` (`user_id`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ");
-
-        // 5. Waste Log Table
-        $db->exec("
-            CREATE TABLE `waste_log` (
-                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                `user_id` INT UNSIGNED NOT NULL,
-                `item_id` INT UNSIGNED NULL,
-                `action` ENUM('rescued', 'wasted') NOT NULL,
-                `value_saved` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-                `logged_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
-                INDEX `idx_waste_user_date` (`user_id`, `logged_at`),
-                INDEX `idx_waste_action` (`action`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ");
-
-        // 6. Rate Limits Table
-        $db->exec("
-            CREATE TABLE `rate_limits` (
-                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                `user_id` INT UNSIGNED NOT NULL,
-                `endpoint` VARCHAR(64) NOT NULL,
-                `called_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
-                INDEX `idx_rate_user_endpoint_time` (`user_id`, `endpoint`, `called_at`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ");
-
-        // 7. Seed Demo User & Items using our existing pure UTF-8 seeder
-        require_once __DIR__ . '/database/seed.php';
-        $seedResult = seed_demo_database();
-
+        $installerResult = run_database_installer();
         $status = 'success';
-        $message = "Database tables created successfully and seeded with {$seedResult['count']} fresh pantry items!";
+        $message = $installerResult['message'];
     } catch (Throwable $e) {
         $status = 'error';
         $message = "Setup failed: " . $e->getMessage();
