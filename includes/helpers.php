@@ -226,6 +226,54 @@ function format_money($amount, string $currency = '₹'): string {
 }
 
 /**
+ * Sanitize and guarantee a clean UTF-8 Emoji
+ * Fixes database encoding artifacts (mojibake e.g. fÑ¼, fiô, f½æ) and missing values
+ */
+function clean_item_emoji(?string $emoji, string $name = '', string $category = 'vegetable'): string {
+    $emoji = trim((string)$emoji);
+
+    // Check if the emoji looks corrupted or is non-emoji ASCII
+    // Mojibake typically starts with 'f', 'Ã', 'Â', 'ñ', 'í', or contains Latin-1 extended bytes
+    $isCorrupted = empty($emoji) 
+        || preg_match('/^[a-zA-Z0-9\s\?.,_\-\'\/]+$/', $emoji)
+        || preg_match('/[ÃÂÑñíîï½¼ø]/u', $emoji)
+        || (str_starts_with($emoji, 'f') && strlen($emoji) >= 2);
+
+    if (!$isCorrupted && mb_strlen($emoji, 'UTF-8') >= 1) {
+        return $emoji;
+    }
+
+    // Name-based smart matching
+    $lower = strtolower($name);
+    if (str_contains($lower, 'spinach') || str_contains($lower, 'palak')) return '🥬';
+    if (str_contains($lower, 'yogurt') || str_contains($lower, 'curd') || str_contains($lower, 'dahi')) return '🥣';
+    if (str_contains($lower, 'milk')) return '🥛';
+    if (str_contains($lower, 'tomat')) return '🍅';
+    if (str_contains($lower, 'strawberr')) return '🍓';
+    if (str_contains($lower, 'mushroom')) return '🍄';
+    if (str_contains($lower, 'dal') || str_contains($lower, 'curry') || str_contains($lower, 'soup') || str_contains($lower, 'tadka')) return '🍲';
+    if (str_contains($lower, 'mint') || str_contains($lower, 'coriander') || str_contains($lower, 'herb')) return '🌿';
+    if (str_contains($lower, 'pepper') || str_contains($lower, 'capsicum')) return '🫑';
+    if (str_contains($lower, 'mango')) return '🥭';
+    if (str_contains($lower, 'carrot')) return '🥕';
+    if (str_contains($lower, 'apple')) return '🍏';
+    if (str_contains($lower, 'paneer') || str_contains($lower, 'cheese')) return '🧀';
+    if (str_contains($lower, 'garlic')) return '🧄';
+    if (str_contains($lower, 'onion')) return '🧅';
+    if (str_contains($lower, 'potato')) return '🥔';
+    if (str_contains($lower, 'banana')) return '🍌';
+    if (str_contains($lower, 'lemon')) return '🍋';
+    if (str_contains($lower, 'bread')) return '🍞';
+    if (str_contains($lower, 'egg')) return '🥚';
+    if (str_contains($lower, 'chicken') || str_contains($lower, 'meat')) return '🍗';
+    if (str_contains($lower, 'fish')) return '🐟';
+    if (str_contains($lower, 'rice')) return '🍚';
+
+    // Fallback to category emoji
+    return category_emoji($category);
+}
+
+/**
  * Map Category to Default Emoji
  */
 function category_emoji(string $category): string {

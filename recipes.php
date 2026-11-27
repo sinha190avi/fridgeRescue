@@ -95,7 +95,7 @@ $savedRecipes = $stmtSaved->fetchAll();
                             $urgent = $days <= 2 ? '🚨' : '';
                         ?>
                             <button type="button" class="pantry-add-chip" data-name="<?= e($item['name']) ?>" onclick="togglePantryItem('<?= e(addslashes($item['name'])) ?>')">
-                                <span><?= e($item['emoji']) ?></span>
+                                <span><?= e(clean_item_emoji($item['emoji'], $item['name'], $item['category'])) ?></span>
                                 <span><?= e($item['name']) ?></span>
                                 <?php if ($urgent): ?>
                                     <span style="font-size: 10px; color: var(--tomato); font-weight: 700;"><?= $days ?>d left</span>

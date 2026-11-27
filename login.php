@@ -26,11 +26,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user = $stmt->fetch();
 
             if ($user && password_verify($password, $user['password_hash'])) {
-                if ($isDemo) {
+                if ($isDemo || (int)($user['id'] ?? 0) === 1) {
                     require_once __DIR__ . '/database/seed.php';
-                    $checkStmt = $db->query("SELECT MAX(expiry_date) as max_exp, COUNT(*) as cnt FROM fridge_items WHERE user_id = 1 AND status = 'active'");
-                    $itemStats = $checkStmt ? $checkStmt->fetch() : null;
-                    if (!$itemStats || (int)($itemStats['cnt'] ?? 0) < 5 || ($itemStats['max_exp'] ?? '') < date('Y-m-d')) {
+                    try {
+                        $staleCheck = $db->query("
+                            SELECT 
+                                SUM(CASE WHEN expiry_date < DATE_SUB(CURDATE(), INTERVAL 2 DAY) THEN 1 ELSE 0 END) as expired_cnt,
+                                SUM(CASE WHEN emoji LIKE 'f%' OR emoji LIKE '%Ã%' OR emoji LIKE '%ñ%' OR emoji LIKE '%½%' THEN 1 ELSE 0 END) as mojibake_cnt,
+                                COUNT(*) as total_cnt
+                            FROM fridge_items 
+                            WHERE user_id = 1 AND status = 'active'
+                        ");
+                        $itemStats = $staleCheck ? $staleCheck->fetch() : null;
+                        if (!$itemStats || (int)($itemStats['total_cnt'] ?? 0) < 5 || (int)($itemStats['expired_cnt'] ?? 0) >= 2 || (int)($itemStats['mojibake_cnt'] ?? 0) > 0) {
+                            seed_demo_database();
+                        }
+                    } catch (Throwable $ignore) {
                         seed_demo_database();
                     }
                 }

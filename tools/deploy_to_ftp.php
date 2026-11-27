@@ -88,7 +88,7 @@ function ftp_upload_recursive($conn, $localDir, $remoteDir, $exclude = []) {
             ftp_upload_recursive($conn, $localPath, $remotePath, $exclude);
         } else {
             echo "  -> " . substr($remotePath, 1) . "\n";
-            $mode = (preg_match('/\.(jpg|png|webp|gif|ico|zip)$/i', $item)) ? FTP_BINARY : FTP_ASCII;
+            $mode = FTP_BINARY; // Always use binary mode to prevent UTF-8 encoding corruption across OS
             $upload = @ftp_put($conn, $remotePath, $localPath, $mode);
             if (!$upload) {
                 // Retry once

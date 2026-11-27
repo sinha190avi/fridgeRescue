@@ -6,3 +6,4 @@ uploads/*
 .idea/
 *.log
 *.zip
+tests/test_cookie.txt

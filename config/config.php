@@ -73,7 +73,7 @@ if (is_dir($sessionDir) && is_writable($sessionDir)) {
 }
 
 // Secure Session Initialization
-if (session_status() === PHP_SESSION_NONE) {
+if (session_status() === PHP_SESSION_NONE && php_sapi_name() !== 'cli') {
     ini_set('session.cookie_httponly', '1');
     ini_set('session.use_only_cookies', '1');
     ini_set('session.cookie_samesite', 'Lax');
